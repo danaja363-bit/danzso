@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>DANZ OFC - Streaming Film</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,'Segoe UI',sans-serif}
+        body{background:#0a0a0a;color:#fff}
+        .header{background:#000;padding:12px 16px;position:sticky;top:0;border-bottom:1px solid #222}
+        .header-content{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+        .logo{font-size:24px;font-weight:bold;background:linear-gradient(135deg,#e50914,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;cursor:pointer}
+        .search-box{display:flex;gap:8px;background:#1a1a1a;padding:4px 12px;border-radius:30px}
+        .search-box input{background:transparent;border:none;color:#fff;padding:8px;width:200px;outline:none}
+        .search-box button{background:#e50914;border:none;color:#fff;padding:6px 14px;border-radius:30px;cursor:pointer}
+        .container{max-width:1200px;margin:0 auto;padding:16px}
+        .category-tabs{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;justify-content:center}
+        .tab-btn{background:#1a1a1a;border:none;padding:8px 18px;border-radius:30px;color:#fff;cursor:pointer}
+        .tab-btn.active{background:#e50914}
+        .movie-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:18px}
+        .movie-card{background:#111;border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .2s;border:1px solid #222}
+        .movie-card:hover{transform:translateY(-5px);border-color:#e50914}
+        .movie-poster{width:100%;aspect-ratio:2/3;background:linear-gradient(135deg,#1a1a2a,#0a0a1a);display:flex;align-items:center;justify-content:center;overflow:hidden}
+        .movie-poster img{width:100%;height:100%;object-fit:cover}
+        .poster-placeholder{font-size:48px;color:#e50914}
+        .movie-info{padding:10px}
+        .movie-title{font-weight:bold;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .movie-year{color:#888;font-size:11px;margin-top:4px}
+        .movie-rating{color:#ffc107;font-size:11px;margin-top:4px}
+        .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:1000;justify-content:center;align-items:center}
+        .modal.active{display:flex}
+        .modal-content{width:95%;max-width:1000px;background:#000;border-radius:16px;overflow:hidden;border:1px solid #e50914}
+        .modal-header{padding:12px 16px;background:#111;display:flex;justify-content:space-between;align-items:center}
+        .modal-header h3{color:#e50914}
+        .close-modal{background:none;border:none;color:#fff;font-size:28px;cursor:pointer}
+        .close-modal:hover{color:#e50914}
+        .video-container{position:relative;padding-bottom:56.25%;height:0}
+        .video-container iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:none}
+        .movie-detail{padding:15px;background:#111}
+        .movie-detail p{color:#ccc;font-size:13px}
+        .alt-sources{display:flex;gap:10px;margin-top:15px;flex-wrap:wrap}
+        .alt-btn{background:#222;border:1px solid #e50914;padding:6px 14px;border-radius:25px;color:#fff;cursor:pointer}
+        .guide{background:#111;border:1px solid #e50914;border-radius:12px;padding:12px;margin-bottom:20px;text-align:center;font-size:13px}
+        .guide span{color:#e50914;font-weight:bold}
+        .footer{text-align:center;padding:16px;border-top:1px solid #222;color:#666;font-size:11px}
+        @media(max-width:500px){.movie-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}.search-box input{width:130px}.tab-btn{padding:5px 12px;font-size:11px}}
+    </style>
+</head>
+<body>
+<div class="header"><div class="header-content"><div class="logo" onclick="location.reload()">🎬 DANZ<span style="color:#fff;">OFC</span></div><div class="search-box"><input type="text" id="searchInput" placeholder="Cari film..."><button onclick="searchMovies()">Cari</button></div></div></div>
+<div class="container"><div class="guide">🎬 <span>CARA NONTON:</span> Klik film → Pilih player → Tunggu 5-10 detik → Nonton! 💡 Jika error, coba player lain</div><div class="category-tabs" id="categoryTabs"></div><div class="movie-grid" id="movieGrid"></div></div>
+<div class="footer"><p>🎬 DANZ OFC - 15+ Film Siap Tonton | 5 Player Alternatif</p></div>
+<div id="movieModal" class="modal"><div class="modal-content"><div class="modal-header"><h3 id="modalTitle">Judul Film</h3><button class="close-modal" onclick="closeModal()">×</button></div><div class="video-container"><iframe id="movieIframe" src="" frameborder="0" allowfullscreen></iframe></div><div class="movie-detail"><p id="modalSynopsis"></p><div class="alt-sources" id="altSources"></div></div></div></div>
+<script>
+const movies=[{id:"tt15398776",title:"Oppenheimer",year:2023,rating:8.5,poster:"https://image.tmdb.org/t/p/w200/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",synopsis:"Kisah J. Robert Oppenheimer, bapak bom atom."},
+{id:"tt15239678",title:"Dune: Part Two",year:2024,rating:8.7,poster:"https://image.tmdb.org/t/p/w200/8b8R8l88Qje9dnbOE6h0jVr6S3b.jpg",synopsis:"Paul Atreides bersatu dengan Fremen untuk balas dendam."},
+{id:"tt1630029",title:"Avatar: The Way of Water",year:2022,rating:7.8,poster:"https://image.tmdb.org/t/p/w200/t6HIqrRAclMCA60NsSmeqe9RmNV.jpg",synopsis:"Jake Sully menjelajahi lautan Pandora."},
+{id:"tt1375666",title:"Inception",year:2010,rating:8.8,poster:"https://image.tmdb.org/t/p/w200/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg",synopsis:"Pencuri mimpi diberi tugas menanamkan ide."},
+{id:"tt0133093",title:"The Matrix",year:1999,rating:8.7,poster:"https://image.tmdb.org/t/p/w200/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg",synopsis:"Hacker menemukan kenyataan sebenarnya."},
+{id:"tt0468569",title:"The Dark Knight",year:2008,rating:9.0,poster:"https://image.tmdb.org/t/p/w200/qJ2tW6WMUDux911r6m7haRef0WH.jpg",synopsis:"Batman vs Joker."},
+{id:"tt0816692",title:"Interstellar",year:2014,rating:8.6,poster:"https://image.tmdb.org/t/p/w200/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",synopsis:"Mencari planet baru untuk manusia."},
+{id:"tt7286456",title:"Joker",year:2019,rating:8.4,poster:"https://image.tmdb.org/t/p/w200/udDclJoHjfjb8Ekgsd4FDteOkCU.jpg",synopsis:"Arthur Fleck berubah jadi ikon kekacauan."},
+{id:"tt8579674",title:"1917",year:2019,rating:8.3,poster:"https://image.tmdb.org/t/p/w200/iZf0KyrE25z1sage4SYFLCCrMiY.jpg",synopsis:"Misi berbahaya di Perang Dunia I."},
+{id:"tt4154796",title:"Avengers: Endgame",year:2019,rating:8.4,poster:"https://image.tmdb.org/t/p/w200/or06FN3Dka5tukK1e9sl16pB3iy.jpg",synopsis:"Avengers vs Thanos."},
+{id:"tt1745960",title:"Top Gun: Maverick",year:2022,rating:8.3,poster:"https://image.tmdb.org/t/p/w200/62HCnUTziyWcpDaBO2i1DX17ljH.jpg",synopsis:"Pete Mitchell kembali melatih pilot baru."},
+{id:"tt1877830",title:"The Batman",year:2022,rating:7.9,poster:"https://image.tmdb.org/t/p/w200/74xTEgt7R36Fpooo50r9T25onhq.jpg",synopsis:"Batman muda ungkap korupsi Gotham."},
+{id:"tt6723592",title:"Tenet",year:2020,rating:7.4,poster:"https://image.tmdb.org/t/p/w200/k68nPLbIST6NP96JmTxmZijEvCA.jpg",synopsis:"Agen rahasia dengan teknologi inversi waktu."},
+{id:"tt9777666",title:"No Time to Die",year:2021,rating:7.3,poster:"https://image.tmdb.org/t/p/w200/iiDsoxOPOen3U3nBZ9l3KxZ3jZz.jpg",synopsis:"James Bond kembali untuk misi terakhir."},
+{id:"tt3480822",title:"Black Widow",year:2021,rating:6.7,poster:"https://image.tmdb.org/t/p/w200/qIegJQ1QH7K9A6r6Z8Q7Q6Q7Q8.jpg",synopsis:"Natasha Romanoff hadapi masa lalunya."}];
+let curCat="all";
+function renderCats(){const cats=[{k:"all",n:"🔥 SEMUA"},{k:"2024",n:"2024"},{k:"2023",n:"2023"},{k:"2022",n:"2022"},{k:"2021",n:"2021"},{k:"2019",n:"2019"},{k:"older",n:"CLASSIC"}];document.getElementById("categoryTabs").innerHTML=cats.map(c=>`<button class="tab-btn ${c.k===curCat?"active":""}" onclick="switchCat('${c.k}')">${c.n}</button>`).join("")}
+function filterByCat(c){if(c==="all")return[...movies];if(c==="2024")return movies.filter(m=>m.year===2024);if(c==="2023")return movies.filter(m=>m.year===2023);if(c==="2022")return movies.filter(m=>m.year===2022);if(c==="2021")return movies.filter(m=>m.year===2021);if(c==="2019")return movies.filter(m=>m.year===2019);if(c==="older")return movies.filter(m=>m.year<=2010);return[...movies]}
+function renderMovies(arr){const g=document.getElementById("movieGrid");if(!arr||!arr.length){g.innerHTML='<p style="color:#888;text-align:center;padding:50px;">😢 Tidak ada film</p>';return}
+g.innerHTML=arr.map(m=>`<div class="movie-card" onclick="play('${m.id}','${m.title.replace(/'/g,"\\'")}','${m.synopsis.replace(/'/g,"\\'")}')"><div class="movie-poster"><img src="${m.poster}" alt="${m.title}" onerror="this.parentElement.innerHTML='<div class=\\'poster-placeholder\\'>🎬</div>'"></div><div class="movie-info"><div class="movie-title">${m.title}</div><div class="movie-year">${m.year}</div><div class="movie-rating">⭐ ${m.rating}/10</div></div></div>`).join("")}
+function switchCat(c){curCat=c;renderCats();renderMovies(filterByCat(c))}
+function searchMovies(){const q=document.getElementById("searchInput").value.toLowerCase().trim();if(!q){renderMovies(filterByCat(curCat));return}
+const r=movies.filter(m=>m.title.toLowerCase().includes(q)||m.year.toString().includes(q));r.length?renderMovies(r):document.getElementById("movieGrid").innerHTML='<p style="color:#888;text-align:center;padding:50px;">😢 Film tidak ditemukan</p>'}
+function play(id,t,s){const mid=id.replace("tt","");document.getElementById("modalTitle").innerText=t;document.getElementById("modalSynopsis").innerHTML=`<strong>📝 Sinopsis:</strong> ${s}`;const srcs=[{n:"🎬 Player 1 (vidsrc)",u:`https://vidsrc.me/embed/movie/${mid}`},{n:"🎬 Player 2 (vidsrc.pro)",u:`https://vidsrc.pro/embed/movie/${mid}`},{n:"🎬 Player 3 (embed.su)",u:`https://embed.su/embed/movie/${mid}`},{n:"🎬 Player 4 (2embed)",u:`https://2embed.org/embed/movie/${mid}`}];document.getElementById("movieIframe").src=srcs[0].u;document.getElementById("altSources").innerHTML=srcs.map(s=>`<button class="alt-btn" onclick="changeSrc('${s.u}','${s.n}')">${s.n}</button>`).join("");document.getElementById("movieModal").classList.add("active")}
+function changeSrc(u,n){document.getElementById("movieIframe").src=u;document.getElementById("modalSynopsis").innerHTML=`<strong>🎬 Mengganti ke ${n}...</strong><br>⏳ Tunggu 5-10 detik`;setTimeout(()=>{const p=document.getElementById("modalSynopsis");if(p.innerHTML.includes("Mengganti"))p.innerHTML=p.innerHTML.replace(`<strong>🎬 Mengganti ke ${n}...</strong><br>⏳ Tunggu 5-10 detik`,"🎬 Player dimuat. Jika error, coba player lain.")},3000)}
+function closeModal(){document.getElementById("movieModal").classList.remove("active");document.getElementById("movieIframe").src=""}
+document.getElementById("searchInput").addEventListener("keypress",e=>{if(e.key==="Enter")searchMovies()});document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});
+renderCats();renderMovies(movies);
+</script>
+</body>
+</html>
